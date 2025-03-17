@@ -1,0 +1,9 @@
+services:
+  gator-db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_USER: dbu
+      POSTGRES_DB: gator
+    ports:
+      - "5433:5432"
