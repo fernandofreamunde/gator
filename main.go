@@ -3,7 +3,11 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/xml"
 	"fmt"
+	"html"
+	"io"
+	"net/http"
 	"os"
 	"time"
 
@@ -37,6 +41,7 @@ func main() {
 	cmds.Register("register", handlerRegister)
 	cmds.Register("reset", handlerReset)
 	cmds.Register("users", handlerUsers)
+	cmds.Register("agg", handlerAgg)
 
 	if len(os.Args) < 2 {
 		fmt.Printf("Error: not enough arguments")
@@ -140,5 +145,68 @@ func handlerUsers(s *config.State, cmd commands.Command) error {
 		}
 		fmt.Println("* ", user.Name.String)
 	}
+	return nil
+}
+
+type RSSFeed struct {
+	Channel struct {
+		Title       string    `xml:"title"`
+		Link        string    `xml:"link"`
+		Description string    `xml:"description"`
+		Item        []RSSItem `xml:"item"`
+	} `xml:"channel"`
+}
+
+type RSSItem struct {
+	Title       string `xml:"title"`
+	Link        string `xml:"link"`
+	Description string `xml:"description"`
+	PubDate     string `xml:"pubDate"`
+}
+
+func fetchFeed(ctx context.Context, feedUrl string) (*RSSFeed, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", feedUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", "gator")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to do request %s", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response %s", err)
+	}
+
+	var feed RSSFeed
+	err = xml.Unmarshal(body, &feed)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse response %s", err)
+	}
+
+	feed.Channel.Title = html.UnescapeString(feed.Channel.Title)
+	feed.Channel.Description = html.UnescapeString(feed.Channel.Description)
+
+	return &feed, nil
+}
+
+func handlerAgg(s *config.State, cmd commands.Command) error {
+
+	ctx := context.Background()
+
+	feed, err := fetchFeed(ctx, "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(feed)
+
 	return nil
 }
