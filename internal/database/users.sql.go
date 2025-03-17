@@ -48,6 +48,15 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users WHERE id = $1
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteUser, id)
+	return err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, created_at, updated_at, name FROM users
 WHERE id = $1
@@ -82,4 +91,13 @@ func (q *Queries) GetUserByName(ctx context.Context, name sql.NullString) (User,
 		&i.Name,
 	)
 	return i, err
+}
+
+const resetUsers = `-- name: ResetUsers :exec
+DELETE FROM users WHERE true
+`
+
+func (q *Queries) ResetUsers(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, resetUsers)
+	return err
 }

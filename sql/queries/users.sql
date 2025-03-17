@@ -18,3 +18,9 @@ SELECT * FROM users
 WHERE name = $1
 LIMIT 1;
 
+-- name: ResetUsers :exec
+DELETE FROM users WHERE true;
+
+-- name: DeleteUser :exec
+DELETE FROM users WHERE id = $1;
+

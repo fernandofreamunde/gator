@@ -35,6 +35,7 @@ func main() {
 
 	cmds.Register("login", handlerLogin)
 	cmds.Register("register", handlerRegister)
+	cmds.Register("reset", handlerReset)
 
 	if len(os.Args) < 2 {
 		fmt.Printf("Error: not enough arguments")
@@ -106,6 +107,18 @@ func handlerRegister(s *config.State, cmd commands.Command) error {
 		return err
 	}
 	fmt.Println("user has been sucessfuly set")
+
+	return nil
+}
+
+func handlerReset(s *config.State, cmd commands.Command) error {
+	ctx := context.Background()
+
+	err := s.Db.ResetUsers(ctx)
+	if err != nil {
+		return err
+	}
+	fmt.Println("users have been sucessfuly reset")
 
 	return nil
 }
