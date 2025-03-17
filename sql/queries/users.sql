@@ -24,3 +24,6 @@ DELETE FROM users WHERE true;
 -- name: DeleteUser :exec
 DELETE FROM users WHERE id = $1;
 
+-- name: GetUsers :many
+SELECT * FROM users;
+

@@ -36,6 +36,7 @@ func main() {
 	cmds.Register("login", handlerLogin)
 	cmds.Register("register", handlerRegister)
 	cmds.Register("reset", handlerReset)
+	cmds.Register("users", handlerUsers)
 
 	if len(os.Args) < 2 {
 		fmt.Printf("Error: not enough arguments")
@@ -120,5 +121,24 @@ func handlerReset(s *config.State, cmd commands.Command) error {
 	}
 	fmt.Println("users have been sucessfuly reset")
 
+	return nil
+}
+
+func handlerUsers(s *config.State, cmd commands.Command) error {
+	ctx := context.Background()
+
+	users, err := s.Db.GetUsers(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		if s.Config.CurrentUserName == user.Name.String {
+
+			fmt.Println("* ", user.Name.String, "(current)")
+			continue
+		}
+		fmt.Println("* ", user.Name.String)
+	}
 	return nil
 }
