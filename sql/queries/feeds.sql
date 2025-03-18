@@ -28,6 +28,14 @@ LIMIT 1;
 -- name: DeleteFeed :exec
 DELETE FROM feeds WHERE id = $1;
 
--- name: GetUserFeedss :many
-SELECT * FROM feeds WHERE user_id = $1;
+-- name: GetUserFeeds :many
+SELECT f.*, u.*
+FROM feeds f
+LEFT JOIN users u ON u.id = f.user_id
+WHERE f.user_id = $1;
+
+-- name: GetFeeds :many
+SELECT f.*, u.name as username
+FROM feeds f
+LEFT JOIN users u ON u.id = f.user_id;
 

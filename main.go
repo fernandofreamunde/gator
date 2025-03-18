@@ -43,6 +43,7 @@ func main() {
 	cmds.Register("users", handlerUsers)
 	cmds.Register("agg", handlerAgg)
 	cmds.Register("addfeed", handlerAddFeed)
+	cmds.Register("feeds", handlerListFeeds)
 
 	if len(os.Args) < 2 {
 		fmt.Printf("Error: not enough arguments")
@@ -239,6 +240,29 @@ func handlerAddFeed(s *config.State, cmd commands.Command) error {
 	}
 
 	fmt.Println(newFeed)
+
+	return nil
+}
+
+func handlerListFeeds(s *config.State, cmd commands.Command) error {
+
+	ctx := context.Background()
+	//	username := sql.NullString{String: s.Config.CurrentUserName, Valid: true}
+
+	//	user, _ := s.Db.GetUserByName(ctx, username)
+
+	feeds, err := s.Db.GetFeeds(ctx)
+
+	if err != nil {
+		return err
+	}
+	fmt.Println(feeds)
+	for _, feed := range feeds {
+		fmt.Println(feed.Name)
+		fmt.Println(feed.Url)
+		fmt.Println(feed.Username)
+		fmt.Println("---")
+	}
 
 	return nil
 }
