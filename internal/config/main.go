@@ -19,7 +19,7 @@ type State struct {
 }
 
 func Read() Config {
-	fmt.Println("reading...")
+	// fmt.Println("reading...")
 	home, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Println(err)
@@ -36,7 +36,7 @@ func Read() Config {
 		fmt.Println(err)
 	}
 
-	fmt.Println(config)
+	// fmt.Println(config)
 	return config
 }
 
