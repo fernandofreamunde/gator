@@ -111,7 +111,7 @@ func (q *Queries) GetUserFeedFollowByUrl(ctx context.Context, arg GetUserFeedFol
 }
 
 const getUserFeedFollows = `-- name: GetUserFeedFollows :many
-SELECT ff.id, ff.created_at, ff.updated_at, ff.user_id, ff.feed_id, u.id, u.created_at, u.updated_at, u.name, f.id, f.created_at, f.updated_at, f.name, f.url, f.user_id
+SELECT ff.id, ff.created_at, ff.updated_at, ff.user_id, ff.feed_id, u.id, u.created_at, u.updated_at, u.name, f.id, f.created_at, f.updated_at, f.name, f.url, f.user_id, f.last_fetched_at
 FROM feed_follows ff
 INNER JOIN users u ON u.id = ff.user_id
 INNER JOIN feeds f ON f.id = ff.feed_id
@@ -119,21 +119,22 @@ WHERE ff.user_id = $1
 `
 
 type GetUserFeedFollowsRow struct {
-	ID          uuid.UUID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	UserID      uuid.NullUUID
-	FeedID      uuid.NullUUID
-	ID_2        uuid.UUID
-	CreatedAt_2 time.Time
-	UpdatedAt_2 time.Time
-	Name        sql.NullString
-	ID_3        uuid.UUID
-	CreatedAt_3 time.Time
-	UpdatedAt_3 time.Time
-	Name_2      sql.NullString
-	Url         sql.NullString
-	UserID_2    uuid.NullUUID
+	ID            uuid.UUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	UserID        uuid.NullUUID
+	FeedID        uuid.NullUUID
+	ID_2          uuid.UUID
+	CreatedAt_2   time.Time
+	UpdatedAt_2   time.Time
+	Name          sql.NullString
+	ID_3          uuid.UUID
+	CreatedAt_3   time.Time
+	UpdatedAt_3   time.Time
+	Name_2        sql.NullString
+	Url           sql.NullString
+	UserID_2      uuid.NullUUID
+	LastFetchedAt sql.NullTime
 }
 
 func (q *Queries) GetUserFeedFollows(ctx context.Context, userID uuid.NullUUID) ([]GetUserFeedFollowsRow, error) {
@@ -161,6 +162,7 @@ func (q *Queries) GetUserFeedFollows(ctx context.Context, userID uuid.NullUUID) 
 			&i.Name_2,
 			&i.Url,
 			&i.UserID_2,
+			&i.LastFetchedAt,
 		); err != nil {
 			return nil, err
 		}
