@@ -107,12 +107,12 @@ func (q *Queries) GetFeedByName(ctx context.Context, name sql.NullString) (Feed,
 
 const getFeedByUrl = `-- name: GetFeedByUrl :one
 SELECT id, created_at, updated_at, name, url, user_id FROM feeds
-WHERE name = $1
+WHERE url = $1
 LIMIT 1
 `
 
-func (q *Queries) GetFeedByUrl(ctx context.Context, name sql.NullString) (Feed, error) {
-	row := q.db.QueryRowContext(ctx, getFeedByUrl, name)
+func (q *Queries) GetFeedByUrl(ctx context.Context, url sql.NullString) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, getFeedByUrl, url)
 	var i Feed
 	err := row.Scan(
 		&i.ID,

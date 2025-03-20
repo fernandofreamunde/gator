@@ -17,7 +17,7 @@ LIMIT 1;
 
 -- name: GetFeedByUrl :one
 SELECT * FROM feeds
-WHERE name = $1
+WHERE url = $1
 LIMIT 1;
 
 -- name: GetFeedByName :one
