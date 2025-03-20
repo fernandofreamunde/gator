@@ -45,6 +45,7 @@ func main() {
 	cmds.Register("addfeed", handlerAddFeed)
 	cmds.Register("feeds", handlerListFeeds)
 	cmds.Register("follow", handlerFollowFeed)
+	cmds.Register("following", handlerFollowing)
 
 	if len(os.Args) < 2 {
 		fmt.Printf("Error: not enough arguments")
@@ -240,6 +241,17 @@ func handlerAddFeed(s *config.State, cmd commands.Command) error {
 		return err
 	}
 
+	_, err = s.Db.CreateFeedFollow(ctx, database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    uuid.NullUUID{UUID: user.ID, Valid: true},
+		FeedID:    uuid.NullUUID{UUID: newFeed.ID, Valid: true},
+	})
+
+	if err != nil {
+		return err
+	}
 	fmt.Println(newFeed)
 
 	return nil
@@ -262,6 +274,30 @@ func handlerListFeeds(s *config.State, cmd commands.Command) error {
 		fmt.Println(feed.Name)
 		fmt.Println(feed.Url)
 		fmt.Println(feed.Username)
+		fmt.Println("---")
+	}
+
+	return nil
+}
+
+func handlerFollowing(s *config.State, cmd commands.Command) error {
+
+	ctx := context.Background()
+	username := sql.NullString{String: s.Config.CurrentUserName, Valid: true}
+	user, err := s.Db.GetUserByName(ctx, username)
+	if err != nil {
+		return err
+	}
+
+	feedFolows, err := s.Db.GetUserFeedFollows(ctx, uuid.NullUUID{UUID: user.ID, Valid: true})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Feed Follows:")
+	for _, follow := range feedFolows {
+		fmt.Println(follow.Name.String)
+		fmt.Println(follow.Name_2.String)
 		fmt.Println("---")
 	}
 
