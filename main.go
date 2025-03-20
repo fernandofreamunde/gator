@@ -40,12 +40,12 @@ func main() {
 	cmds.Register("login", handlerLogin)
 	cmds.Register("register", handlerRegister)
 	cmds.Register("reset", handlerReset)
-	cmds.Register("users", handlerUsers)
+	cmds.Register("users", middlewareLoggedIn(handlerUsers))
 	cmds.Register("agg", handlerAgg)
-	cmds.Register("addfeed", handlerAddFeed)
+	cmds.Register("addfeed", middlewareLoggedIn(handlerAddFeed))
 	cmds.Register("feeds", handlerListFeeds)
-	cmds.Register("follow", handlerFollowFeed)
-	cmds.Register("following", handlerFollowing)
+	cmds.Register("follow", middlewareLoggedIn(handlerFollowFeed))
+	cmds.Register("following", middlewareLoggedIn(handlerFollowing))
 
 	if len(os.Args) < 2 {
 		fmt.Printf("Error: not enough arguments")
@@ -65,6 +65,22 @@ func main() {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
+}
+
+func middlewareLoggedIn(handler func(s *config.State, cmd commands.Command, user database.User) error) func(*config.State, commands.Command) error {
+
+	return func(s *config.State, cmd commands.Command) error {
+		ctx := context.Background()
+		username := sql.NullString{String: s.Config.CurrentUserName, Valid: true}
+
+		user, err := s.Db.GetUserByName(ctx, username)
+		if err != nil {
+			return err
+		}
+
+		return handler(s, cmd, user)
+	}
+
 }
 
 func handlerLogin(s *config.State, cmd commands.Command) error {
@@ -133,7 +149,7 @@ func handlerReset(s *config.State, cmd commands.Command) error {
 	return nil
 }
 
-func handlerUsers(s *config.State, cmd commands.Command) error {
+func handlerUsers(s *config.State, cmd commands.Command, user database.User) error {
 	ctx := context.Background()
 
 	users, err := s.Db.GetUsers(ctx)
@@ -141,13 +157,13 @@ func handlerUsers(s *config.State, cmd commands.Command) error {
 		return err
 	}
 
-	for _, user := range users {
-		if s.Config.CurrentUserName == user.Name.String {
+	for _, loopUser := range users {
+		if user.Name.String == loopUser.Name.String {
 
-			fmt.Println("* ", user.Name.String, "(current)")
+			fmt.Println("* ", loopUser.Name.String, "(current)")
 			continue
 		}
-		fmt.Println("* ", user.Name.String)
+		fmt.Println("* ", loopUser.Name.String)
 	}
 	return nil
 }
@@ -215,16 +231,13 @@ func handlerAgg(s *config.State, cmd commands.Command) error {
 	return nil
 }
 
-func handlerAddFeed(s *config.State, cmd commands.Command) error {
+func handlerAddFeed(s *config.State, cmd commands.Command, user database.User) error {
 
 	if len(cmd.Args) < 2 {
 		return fmt.Errorf("feed name and url are requiered")
 	}
 
 	ctx := context.Background()
-	username := sql.NullString{String: s.Config.CurrentUserName, Valid: true}
-
-	user, _ := s.Db.GetUserByName(ctx, username)
 	name := sql.NullString{String: cmd.Args[0], Valid: true}
 	url := sql.NullString{String: cmd.Args[1], Valid: true}
 
@@ -260,10 +273,6 @@ func handlerAddFeed(s *config.State, cmd commands.Command) error {
 func handlerListFeeds(s *config.State, cmd commands.Command) error {
 
 	ctx := context.Background()
-	//	username := sql.NullString{String: s.Config.CurrentUserName, Valid: true}
-
-	//	user, _ := s.Db.GetUserByName(ctx, username)
-
 	feeds, err := s.Db.GetFeeds(ctx)
 
 	if err != nil {
@@ -280,15 +289,9 @@ func handlerListFeeds(s *config.State, cmd commands.Command) error {
 	return nil
 }
 
-func handlerFollowing(s *config.State, cmd commands.Command) error {
+func handlerFollowing(s *config.State, cmd commands.Command, user database.User) error {
 
 	ctx := context.Background()
-	username := sql.NullString{String: s.Config.CurrentUserName, Valid: true}
-	user, err := s.Db.GetUserByName(ctx, username)
-	if err != nil {
-		return err
-	}
-
 	feedFolows, err := s.Db.GetUserFeedFollows(ctx, uuid.NullUUID{UUID: user.ID, Valid: true})
 	if err != nil {
 		return err
@@ -304,7 +307,7 @@ func handlerFollowing(s *config.State, cmd commands.Command) error {
 	return nil
 }
 
-func handlerFollowFeed(s *config.State, cmd commands.Command) error {
+func handlerFollowFeed(s *config.State, cmd commands.Command, user database.User) error {
 
 	if len(cmd.Args) < 1 {
 		return fmt.Errorf("feed url is requiered")
@@ -313,11 +316,6 @@ func handlerFollowFeed(s *config.State, cmd commands.Command) error {
 	url := sql.NullString{String: cmd.Args[0], Valid: true}
 
 	ctx := context.Background()
-	username := sql.NullString{String: s.Config.CurrentUserName, Valid: true}
-	user, err := s.Db.GetUserByName(ctx, username)
-	if err != nil {
-		return err
-	}
 
 	feed, err := s.Db.GetFeedByUrl(ctx, url)
 	if err != nil {
