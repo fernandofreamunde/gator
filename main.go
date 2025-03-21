@@ -220,16 +220,33 @@ func fetchFeed(ctx context.Context, feedUrl string) (*RSSFeed, error) {
 
 func handlerAgg(s *config.State, cmd commands.Command) error {
 
-	ctx := context.Background()
+	if len(cmd.Args) < 1 {
+		return fmt.Errorf("time between reqs requiered")
+	}
 
-	feed, err := fetchFeed(ctx, "https://www.wagslane.dev/index.xml")
+	timeBetweenReqs, err := time.ParseDuration(cmd.Args[0])
 	if err != nil {
 		return err
 	}
+	fmt.Println("Collecting feeds every", timeBetweenReqs)
 
-	fmt.Println(feed)
+	//	feed, err := fetchFeed(ctx, "https://www.wagslane.dev/index.xml")
+	ticker := time.NewTicker(timeBetweenReqs)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+	}
+}
 
-	return nil
+func scrapeFeeds(s *config.State) {
+	nftf, _ := s.Db.GetNextFeedToFetch(context.Background())
+
+	rss, _ := fetchFeed(context.Background(), nftf.Url.String)
+
+	for _, item := range rss.Channel.Item {
+		fmt.Println(item.Title)
+	}
+
+	s.Db.MarkFeedFetched(context.Background(), nftf.ID)
 }
 
 func handlerAddFeed(s *config.State, cmd commands.Command, user database.User) error {
