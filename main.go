@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -243,7 +244,28 @@ func scrapeFeeds(s *config.State) {
 	rss, _ := fetchFeed(context.Background(), nftf.Url.String)
 
 	for _, item := range rss.Channel.Item {
-		fmt.Println(item.Title)
+		pubat, err := time.Parse("2006-01-02T15:04:05Z", item.PubDate)
+		if err != nil {
+			pubat = time.Now()
+		}
+
+		_, err = s.Db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			FeedID:      uuid.NullUUID{UUID: nftf.ID, Valid: true},
+			Title:       sql.NullString{String: item.Title, Valid: true},
+			Url:         sql.NullString{String: item.Link, Valid: true},
+			Description: sql.NullString{String: item.Description, Valid: true},
+			PublishedAt: pubat,
+		})
+
+		if err != nil {
+			if strings.Contains(err.Error(), "posts_url_key") {
+				continue
+			}
+			fmt.Println(err)
+		}
 	}
 
 	s.Db.MarkFeedFetched(context.Background(), nftf.ID)
