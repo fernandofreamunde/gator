@@ -12,7 +12,7 @@ VALUES (
 	)
 	RETURNING *;
 
--- name: GetPostsForUser :one
+-- name: GetPostsForUser :many
 SELECT p.* 
 FROM posts p
 LEFT JOIN feed_follows ff ON ff.feed_id = p.feed_id

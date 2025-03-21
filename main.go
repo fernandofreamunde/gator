@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -48,6 +49,7 @@ func main() {
 	cmds.Register("follow", middlewareLoggedIn(handlerFollowFeed))
 	cmds.Register("following", middlewareLoggedIn(handlerFollowing))
 	cmds.Register("unfollow", middlewareLoggedIn(handlerUnfollow))
+	cmds.Register("browse", middlewareLoggedIn(handlerBrowse))
 
 	if len(os.Args) < 2 {
 		fmt.Printf("Error: not enough arguments")
@@ -400,6 +402,40 @@ func handlerUnfollow(s *config.State, cmd commands.Command, user database.User) 
 
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func handlerBrowse(s *config.State, cmd commands.Command, user database.User) error {
+
+	var limit int32
+	limit = 2
+	if len(cmd.Args) > 0 {
+		value, err := strconv.ParseInt(cmd.Args[0], 10, 32)
+		if err != nil {
+			// Handle error (e.g., not a valid number)
+			return err
+		}
+		limit = int32(value)
+
+	}
+	ctx := context.Background()
+
+	posts, err := s.Db.GetPostsForUser(ctx, database.GetPostsForUserParams{
+		UserID: uuid.NullUUID{UUID: user.ID, Valid: true},
+		Limit:  limit,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, post := range posts {
+		fmt.Println("Title:", post.Title.String)
+		fmt.Println("url:", post.Url.String)
+		fmt.Println("Publised At:", post.PublishedAt)
+		fmt.Println("Description:", post.Description.String)
+		fmt.Println("-------")
 	}
 
 	return nil
